@@ -15,7 +15,7 @@ IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
 DNSServer dnsServer; // Servidor DNS para evitar desconexiones en el celular
 
-// ================= ASIGNACIÓN DE PINES (TB6612FNG - ACTUALIZADA) =================
+// ================= ASIGNACIÓN DE PINES (CONFIGURACIÓN DE TU AMIGO) =================
 const int AIN1_PIN  = 18;  
 const int AIN2_PIN  = 17;  
 const int BIN1_PIN  = 3;   
@@ -24,7 +24,11 @@ const int PWMA_PIN  = 16;
 const int PWMB_PIN  = 9;   
 const int STBY_PIN  = 8;   
 
-int VELOCIDAD = 180;
+int VELOCIDAD = 180; // Potencia base (0 - 255)
+
+// Factores de calibración para compensar si un motor gira más rápido que el otro (Valores entre 0.0 y 1.0)
+float TRIM_A = 1.0; // Ajuste para Motor A
+float TRIM_B = 1.0; // Ajuste para Motor B (si B corre más, bájalo a 0.9, etc.)
 
 // ================= INTERFAZ WEB PROFESIONAL "MA3 PRO" =================
 const char INDEX_HTML[] PROGMEM = R"rawliteral(
@@ -346,29 +350,34 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 void moverAdelante() {
     digitalWrite(AIN1_PIN, HIGH); digitalWrite(AIN2_PIN, LOW);
     digitalWrite(BIN1_PIN, HIGH); digitalWrite(BIN2_PIN, LOW);
-    ledcWrite(PWMA_PIN, VELOCIDAD); ledcWrite(PWMB_PIN, VELOCIDAD);
+    ledcWrite(PWMA_PIN, (int)(VELOCIDAD * TRIM_A)); 
+    ledcWrite(PWMB_PIN, (int)(VELOCIDAD * TRIM_B));
 }
 
 void moverAtras() {
     digitalWrite(AIN1_PIN, LOW); digitalWrite(AIN2_PIN, HIGH);
     digitalWrite(BIN1_PIN, LOW); digitalWrite(BIN2_PIN, HIGH);
-    ledcWrite(PWMA_PIN, VELOCIDAD); ledcWrite(PWMB_PIN, VELOCIDAD);
+    ledcWrite(PWMA_PIN, (int)(VELOCIDAD * TRIM_A)); 
+    ledcWrite(PWMB_PIN, (int)(VELOCIDAD * TRIM_B));
 }
 
 void girarIzquierda() {
     digitalWrite(AIN1_PIN, HIGH); digitalWrite(AIN2_PIN, LOW);
     digitalWrite(BIN1_PIN, LOW);  digitalWrite(BIN2_PIN, HIGH);
-    ledcWrite(PWMA_PIN, VELOCIDAD); ledcWrite(PWMB_PIN, VELOCIDAD);
+    ledcWrite(PWMA_PIN, (int)(VELOCIDAD * TRIM_A)); 
+    ledcWrite(PWMB_PIN, (int)(VELOCIDAD * TRIM_B));
 }
 
 void girarDerecha() {
     digitalWrite(AIN1_PIN, LOW);  digitalWrite(AIN2_PIN, HIGH);
     digitalWrite(BIN1_PIN, HIGH); digitalWrite(BIN2_PIN, LOW);
-    ledcWrite(PWMA_PIN, VELOCIDAD); ledcWrite(PWMB_PIN, VELOCIDAD);
+    ledcWrite(PWMA_PIN, (int)(VELOCIDAD * TRIM_A)); 
+    ledcWrite(PWMB_PIN, (int)(VELOCIDAD * TRIM_B));
 }
 
 void detener() {
-    ledcWrite(PWMA_PIN, 0); ledcWrite(PWMB_PIN, 0);
+    ledcWrite(PWMA_PIN, 0); 
+    ledcWrite(PWMB_PIN, 0);
 }
 
 // ================= SETUP GENERAL =================
@@ -382,7 +391,7 @@ void setup() {
     // Desactivar ahorro de energía en antena WiFi para máxima velocidad de respuesta
     esp_wifi_set_ps(WIFI_PS_NONE);
 
-    // Servidor DNS Cautivo para estabilizar la conexión del celular
+    // Servidor DNS Cautivo para evitar desconexiones en el celular
     dnsServer.start(53, "*", ipLocal);
 
     ArduinoOTA.begin();
@@ -407,19 +416,19 @@ void setup() {
     server.on("/izquierda", []() { girarIzquierda(); server.send(200, "text/plain", "OK"); });
     server.on("/derecha", []() { girarDerecha(); server.send(200, "text/plain", "OK"); });
     server.on("/detener", []() { detener(); server.send(200, "text/plain", "OK"); });
+    server.onNotFound([]() { server.send(200, "text/html", INDEX_HTML); });
     
     server.on("/set_vel", []() {
         if (server.hasArg("v")) {
             VELOCIDAD = server.arg("v").toInt();
-            ledcWrite(PWMA_PIN, VELOCIDAD);
-            ledcWrite(PWMB_PIN, VELOCIDAD);
+            ledcWrite(PWMA_PIN, (int)(VELOCIDAD * TRIM_A));
+            ledcWrite(PWMB_PIN, (int)(VELOCIDAD * TRIM_B));
         }
         server.send(200, "text/plain", "OK");
     });
 
-    server.onNotFound([]() { server.send(200, "text/html", INDEX_HTML); });
     server.begin();
-    Serial.println("MA3 Ready for Competition.");
+    Serial.println("MA3 PRO Ready for Competition.");
 }
 
 void loop() {
