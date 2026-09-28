@@ -15,14 +15,14 @@ IPAddress subnet(255, 255, 255, 0);
 WebServer server(80);
 DNSServer dnsServer; // Servidor DNS para evitar desconexiones en el celular
 
-// ================= ASIGNACIÓN DE PINES (TB6612FNG) =================
-const int PWMB_PIN  = 8;   
-const int BIN2_PIN  = 18;  
-const int BIN1_PIN  = 17;  
-const int STBY_PIN  = 16;  
-const int AIN1_PIN  = 15;  
-const int AIN2_PIN  = 7;   
-const int PWMA_PIN  = 6;   
+// ================= ASIGNACIÓN DE PINES (TB6612FNG - ACTUALIZADA) =================
+const int AIN1_PIN  = 18;  
+const int AIN2_PIN  = 17;  
+const int BIN1_PIN  = 3;   
+const int BIN2_PIN  = 46;  
+const int PWMA_PIN  = 16;  
+const int PWMB_PIN  = 9;   
+const int STBY_PIN  = 8;   
 
 int VELOCIDAD = 180;
 
@@ -392,6 +392,7 @@ void setup() {
     pinMode(STBY_PIN, OUTPUT);
     digitalWrite(STBY_PIN, HIGH); 
     
+    // Configuración PWM moderna compatible con ESP32 Core v3.x
     ledcAttach(PWMA_PIN, 1000, 8); 
     ledcAttach(PWMB_PIN, 1000, 8);
     detener(); 
